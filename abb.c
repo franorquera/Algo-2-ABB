@@ -159,14 +159,13 @@ void* _abb_borrar(abb_t *arbol, nodo_abb_t *nodo_padre, nodo_abb_t *nodo_hijo, c
             const char* copia_clave = strdup(nodo_remplazante_clave);
 
 
-            void* nodo_remplazante_dato = _abb_borrar(arbol, nodo_padre, nodo_remplazante, nodo_remplazante_clave, cmp);
+            void* nodo_remplazante_dato = _abb_borrar(arbol, NULL, arbol->raiz, nodo_remplazante_clave, cmp);
             free((char*) nodo_hijo->clave);
 
             void* valor_hijo = nodo_hijo->dato;
             nodo_hijo->clave = copia_clave;
             nodo_hijo->dato = nodo_remplazante_dato;
 
-            //if (!nodo_padre) arbol->raiz = nodo_hijo;
             return valor_hijo;
         }
 
