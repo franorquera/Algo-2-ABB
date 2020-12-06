@@ -198,6 +198,67 @@ static void prueba_abb_valor_null()
 
     abb_destruir(abb);
 }
+
+static ssize_t buscar(const char* clave, char* claves[], size_t largo)
+{
+    for (size_t i = 0; i < largo; i++) {
+        if (strcmp(clave, claves[i]) == 0) return (ssize_t) i;
+    }
+    return -1;
+}
+
+static void prueba_abb_iterar()
+{
+    abb_t* abb = abb_crear(strcmp, NULL);
+
+    char *claves[] = {"perro", "gato", "vaca"};
+    char *valores[] = {"guau", "miau", "mu"};
+
+    /* Inserta 3 valores */
+    print_test("Prueba abb insertar clave1", abb_guardar(abb, claves[0], valores[0]));
+    print_test("Prueba abb insertar clave2", abb_guardar(abb, claves[1], valores[1]));
+    print_test("Prueba abb insertar clave3", abb_guardar(abb, claves[2], valores[2]));
+
+    // Prueba de iteración sobre las claves almacenadas.
+    abb_iter_t* iter = abb_iter_in_crear(abb);
+    const char *clave;
+    ssize_t indice;
+
+    print_test("Prueba abb iterador esta al final, es false", !abb_iter_in_al_final(iter));
+
+    /* Primer valor */
+    clave = abb_iter_in_ver_actual(iter);
+    indice = buscar(clave, claves, sizeof(claves) / sizeof(char *));
+    print_test("Prueba abb iterador ver actual, es una clave valida", indice != -1);
+    print_test("Prueba abb iterador ver actual, no es el mismo puntero", clave != claves[indice]);
+    print_test("Prueba abb iterador avanzar es true", abb_iter_in_avanzar(iter));
+    print_test("Prueba abb iterador esta al final, es false", !abb_iter_in_al_final(iter));
+
+    /* Segundo valor */
+    clave = abb_iter_in_ver_actual(iter);
+    indice = buscar(clave, claves, sizeof(claves) / sizeof(char *));
+    print_test("Prueba abb iterador ver actual, es una clave valida", indice != -1);
+    print_test("Prueba abb iterador ver actual, no es el mismo puntero", clave != claves[indice]);
+    print_test("Prueba abb iterador avanzar es true", abb_iter_in_avanzar(iter));
+    print_test("Prueba abb iterador esta al final, es false", !abb_iter_in_al_final(iter));
+
+    /* Tercer valor */
+    clave = abb_iter_in_ver_actual(iter);
+    indice = buscar(clave, claves, sizeof(claves) / sizeof(char *));
+    print_test("Prueba abb iterador ver actual, es una clave valida", indice != -1);
+    print_test("Prueba abb iterador ver actual, no es el mismo puntero", clave != claves[indice]);
+    abb_iter_in_avanzar(iter);
+    print_test("Prueba abb iterador esta al final, es true", abb_iter_in_al_final(iter));
+
+    /* Vuelve a tratar de avanzar, por las dudas */
+    print_test("Prueba abb iterador ver actual, es NULL", !abb_iter_in_ver_actual(iter));
+    print_test("Prueba abb iterador avanzar es false", !abb_iter_in_avanzar(iter));
+    print_test("Prueba abb iterador esta al final, es true", abb_iter_in_al_final(iter));
+
+    abb_iter_in_destruir(iter);
+    abb_destruir(abb);
+}
+
 /* ******************************************************************
  *                        FUNCIÓN PRINCIPAL
  * *****************************************************************/
@@ -224,7 +285,10 @@ void pruebas_abb_alumno()
     prueba_abb_valor_null();
     /*
     prueba_abb_volumen(5000, true);
+    */
+    printf("\nprueba prueba_abb_iterar\n\n");
     prueba_abb_iterar();
+    /*
     prueba_abb_iterar_volumen(5000);
     */
 }
