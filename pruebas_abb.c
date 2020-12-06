@@ -19,6 +19,19 @@ static void prueba_crear_abb_vacio()
     abb_destruir(abb);
 }
 
+static void prueba_iterar_abb_vacio()
+{
+    abb_t* abb = abb_crear(strcmp, NULL);
+    abb_iter_t* iter = abb_iter_in_crear(abb);
+    print_test("Prueba abb iter crear iterador abb vacio", iter);
+    print_test("Prueba abb iter esta al final", abb_iter_in_al_final(iter));
+    print_test("Prueba abb iter avanzar es false", !abb_iter_in_avanzar(iter));
+    print_test("Prueba abb iter ver actual es NULL", !abb_iter_in_ver_actual(iter));
+
+    abb_iter_in_destruir(iter);
+    abb_destruir(abb);
+}
+
 
 static void prueba_abb_insertar()
 {
@@ -195,7 +208,8 @@ void pruebas_abb_alumno()
     /* Ejecuta todas las pruebas unitarias. */
     printf("\nprueba prueba_crear_abb_vacio\n\n");
     prueba_crear_abb_vacio();
-    //prueba_iterar_abb_vacio();
+    printf("\nprueba prueba_iterar_abb_vacio\n\n");
+    prueba_iterar_abb_vacio();
     printf("\nprueba prueba_abb_insertar\n\n");
     prueba_abb_insertar();
     printf("\nprueba prueba_abb_reemplazar\n\n");

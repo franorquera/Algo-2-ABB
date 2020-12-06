@@ -3,6 +3,7 @@
 #include "string.h"
 #include "stdbool.h"
 #include "stdio.h"
+#include "cola.h"
 
 typedef struct nodo_abb {
     struct nodo_abb *izq;
@@ -21,8 +22,9 @@ struct abb {
 struct abb_iter{
   const abb_t* abb;
   //nodo_abb_t* nodo_act;
-  nodo_abb_t** lista_nodos;
-  size_t pos;
+  //nodo_abb_t** lista_nodos;
+  //size_t pos;
+  cola_t* cola;
 };
 
 
@@ -224,29 +226,46 @@ void abb_destruir(abb_t *arbol) {
 
 // ITERADOR EXTERNO
 
+void llenar_iterador(cola_t *cola, nodo_abb_t* nodo_act){
+    if(!nodo_act) return;
+
+    llenar_iterador(cola,nodo_act->izq);
+    cola_encolar(cola, (char*)nodo_act->clave);
+    llenar_iterador(cola,nodo_act->der);
+}
+
 // Crea el iterador.
 abb_iter_t *abb_iter_in_crear(const abb_t *arbol){
     abb_iter_t *abb_iter = malloc(sizeof(abb_iter_t));
     if(!abb_iter) return NULL;
 
-    abb_iter->lista_nodos = malloc(sizeof(nodo_abb_t) * arbol->cant + 1);
-    abb_iter->abb = arbol;
-    abb_iter->pos = 0;
-
+    abb_iter->cola = cola_crear();
+    llenar_iterador(abb_iter->cola, arbol->raiz);
     return abb_iter;
 
 }
 
 // Avanza el iterador.
-bool abb_iter_in_avanzar(abb_iter_t *iter);
+bool abb_iter_in_avanzar(abb_iter_t *iter){
+    if(abb_iter_in_al_final(iter)) return false;
+    cola_desencolar(iter->cola);
+    return true;
+}
 
 // Devuelve la clave del actual, dicha clave no se puede modificar ni liberar.
-const char *abb_iter_in_ver_actual(const abb_iter_t *iter);
+const char *abb_iter_in_ver_actual(const abb_iter_t *iter){
+    if(abb_iter_in_al_final(iter)) return NULL;
+    const char* clave = cola_ver_primero(iter->cola);
+    return clave;
+}
 
 // Comprueba si termino la iteracion.
-bool abb_iter_in_al_final(const abb_iter_t *iter);
+bool abb_iter_in_al_final(const abb_iter_t *iter){
+    return cola_esta_vacia(iter->cola);
+}
 
 // Destryue el iterador
 void abb_iter_in_destruir(abb_iter_t* iter){
+    cola_destruir(iter->cola,NULL);
     free(iter);
 }
