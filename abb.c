@@ -18,6 +18,14 @@ struct abb {
     abb_destruir_dato_t destruir;
 };
 
+struct abb_iter{
+  const abb_t* abb;
+  //nodo_abb_t* nodo_act;
+  nodo_abb_t** lista_nodos;
+  size_t pos;
+};
+
+
 abb_t* abb_crear(abb_comparar_clave_t cmp, abb_destruir_dato_t destruir_dato) {
     abb_t* abb = malloc(sizeof(abb_t));
 
@@ -48,7 +56,7 @@ nodo_abb_t* nodo_abb_crear(const char *clave, void *dato) {
 void _abb_guardar(abb_comparar_clave_t cmp ,nodo_abb_t *nodo_act, nodo_abb_t *nodo_nuevo) {
     if (!nodo_act) return;
 
-    if (cmp(nodo_act->clave, nodo_nuevo->clave) > 0) {
+    if (cmp(nodo_act->clave, nodo_nuevo->clave) < 0) {
         if (nodo_act->der) _abb_guardar(cmp, nodo_act->der, nodo_nuevo);
         else nodo_act->der = nodo_nuevo;
     }
@@ -58,8 +66,23 @@ void _abb_guardar(abb_comparar_clave_t cmp ,nodo_abb_t *nodo_act, nodo_abb_t *no
     }
 }
 
+bool _abb_modificar_valor(nodo_abb_t *nodo_act, const char *clave, void *dato, abb_comparar_clave_t cmp, abb_destruir_dato_t destruir){
+    if(cmp(nodo_act->clave, clave) == 0){
+        if(destruir) destruir(nodo_act->dato);
+        nodo_act->dato = dato;
+        return true;
+    }
+
+    if(cmp(nodo_act->clave, clave) < 0){
+        return _abb_modificar_valor(nodo_act->der,clave, dato, cmp, destruir);
+    }
+    return _abb_modificar_valor(nodo_act->izq,clave, dato, cmp, destruir);
+
+}
+
 bool abb_guardar(abb_t *arbol, const char *clave, void *dato) {
-    // SI LO PODEMOS OBTENER
+
+    if(abb_pertenece(arbol, clave)) return _abb_modificar_valor(arbol->raiz, clave, dato, arbol->cmp, arbol->destruir);
 
     const char* copia_clave = strdup(clave);
     
@@ -79,7 +102,7 @@ void* _abb_obtener (const nodo_abb_t *nodo_act, const char *clave, abb_comparar_
 
     if (cmp(nodo_act->clave, clave) == 0) return nodo_act->dato;
 
-    if (cmp(nodo_act->clave, clave) > 0) {
+    if (cmp(nodo_act->clave, clave) < 0) {
         return _abb_obtener(nodo_act->der, clave, cmp);
     }
     return _abb_obtener(nodo_act->izq, clave, cmp);
@@ -98,7 +121,7 @@ bool _abb_pertenece (const nodo_abb_t *nodo_act, const char *clave, abb_comparar
 
     if (cmp(nodo_act->clave, clave) == 0) return true;
 
-    if (cmp(nodo_act->clave, clave) > 0) return _abb_pertenece(nodo_act->der, clave, cmp);
+    if (cmp(nodo_act->clave, clave) < 0) return _abb_pertenece(nodo_act->der, clave, cmp);
     
     return _abb_pertenece(nodo_act->izq, clave, cmp);
 }
@@ -110,8 +133,6 @@ bool abb_pertenece(const abb_t *arbol, const char *clave) {
 nodo_abb_t* _abb_buscar_candidato(nodo_abb_t *nodo_act) {
     if (!nodo_act->izq) return nodo_act;
     return _abb_buscar_candidato(nodo_act->izq);
-    
-    //return nodo_act->izq ? _abb_buscar_candidato(nodo_act->izq) : nodo_act;
 }
 
 void* _abb_borrar(abb_t *arbol, nodo_abb_t *nodo_padre, nodo_abb_t *nodo_hijo, const char *clave, abb_comparar_clave_t cmp) {
@@ -170,7 +191,7 @@ void* _abb_borrar(abb_t *arbol, nodo_abb_t *nodo_padre, nodo_abb_t *nodo_hijo, c
         }
 
     }
-    else if (cmp(nodo_hijo->clave, clave) > 0) return _abb_borrar(arbol, nodo_hijo ,nodo_hijo->der, clave, cmp);
+    else if (cmp(nodo_hijo->clave, clave) < 0) return _abb_borrar(arbol, nodo_hijo ,nodo_hijo->der, clave, cmp);
     return _abb_borrar(arbol, nodo_hijo, nodo_hijo->izq, clave, cmp);
 }
 
@@ -197,4 +218,35 @@ void _abb_destruir(nodo_abb_t *nodo_act, abb_destruir_dato_t destruir) {
 void abb_destruir(abb_t *arbol) {
     _abb_destruir(arbol->raiz, arbol->destruir);
     free(arbol);
+}
+
+
+
+// ITERADOR EXTERNO
+
+// Crea el iterador.
+abb_iter_t *abb_iter_in_crear(const abb_t *arbol){
+    abb_iter_t *abb_iter = malloc(sizeof(abb_iter_t));
+    if(!abb_iter) return NULL;
+
+    abb_iter->lista_nodos = malloc(sizeof(nodo_abb_t) * arbol->cant + 1);
+    abb_iter->abb = arbol;
+    abb_iter->pos = 0;
+
+    return abb_iter;
+
+}
+
+// Avanza el iterador.
+bool abb_iter_in_avanzar(abb_iter_t *iter);
+
+// Devuelve la clave del actual, dicha clave no se puede modificar ni liberar.
+const char *abb_iter_in_ver_actual(const abb_iter_t *iter);
+
+// Comprueba si termino la iteracion.
+bool abb_iter_in_al_final(const abb_iter_t *iter);
+
+// Destryue el iterador
+void abb_iter_in_destruir(abb_iter_t* iter){
+    free(iter);
 }
