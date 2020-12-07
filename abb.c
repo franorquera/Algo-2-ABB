@@ -21,9 +21,6 @@ struct abb {
 
 struct abb_iter{
   const abb_t* abb;
-  //nodo_abb_t* nodo_act;
-  //nodo_abb_t** lista_nodos;
-  //size_t pos;
   cola_t* cola;
 };
 
@@ -142,11 +139,13 @@ void* _abb_borrar(abb_t *arbol, nodo_abb_t *nodo_padre, nodo_abb_t *nodo_hijo, c
 
     if (cmp(nodo_hijo->clave, clave) == 0) {
         if (!nodo_hijo->izq && !nodo_hijo->der) {
+            
             if (nodo_padre && nodo_padre->izq && cmp(nodo_padre->izq->clave, nodo_hijo->clave) == 0) nodo_padre->izq = NULL;
+            
             else if (nodo_padre && nodo_padre->der && cmp(nodo_padre->der->clave, nodo_hijo->clave) == 0) nodo_padre->der = NULL;
-            else if (!nodo_padre) {
-                arbol->raiz = NULL;
-            }
+            
+            else if (!nodo_padre) arbol->raiz = NULL;
+            
             void* valor_hijo = nodo_hijo->dato;
             free((char*) nodo_hijo->clave);
             free(nodo_hijo);
@@ -157,23 +156,24 @@ void* _abb_borrar(abb_t *arbol, nodo_abb_t *nodo_padre, nodo_abb_t *nodo_hijo, c
         else if ((!nodo_hijo->izq && nodo_hijo->der) || (!nodo_hijo->der && nodo_hijo->izq)) {
             if (nodo_hijo->izq) {
                 if (nodo_padre && nodo_padre->izq && cmp(nodo_padre->izq->clave, nodo_hijo->clave) == 0) nodo_padre->izq = nodo_hijo->izq;
+                
                 else if (nodo_padre && nodo_padre->der && cmp(nodo_padre->der->clave, nodo_hijo->clave) == 0) nodo_padre->der = nodo_hijo->izq;
+                
                 else if (!nodo_padre) arbol->raiz = nodo_hijo->izq;
-                void* valor_hijo = nodo_hijo->dato;
-                free((char*) nodo_hijo->clave);
-                free(nodo_hijo);
-                return valor_hijo;
             }
             
             else if (nodo_hijo->der) {
                 if (nodo_padre && nodo_padre->izq && cmp(nodo_padre->izq->clave, nodo_hijo->clave) == 0) nodo_padre->izq = nodo_hijo->der;
+                
                 else if (nodo_padre && nodo_padre->der && cmp(nodo_padre->der->clave, nodo_hijo->clave) == 0) nodo_padre->der = nodo_hijo->der;
+                
                 else if (!nodo_padre) arbol->raiz = nodo_hijo->der;
-                void* valor_hijo = nodo_hijo->dato;
-                free((char*) nodo_hijo->clave);
-                free(nodo_hijo);
-                return valor_hijo;
             }
+            
+            void* valor_hijo = nodo_hijo->dato;
+            free((char*) nodo_hijo->clave);
+            free(nodo_hijo);
+            return valor_hijo;
         }
 
         else if (nodo_hijo->izq && nodo_hijo->der) {
@@ -188,11 +188,11 @@ void* _abb_borrar(abb_t *arbol, nodo_abb_t *nodo_padre, nodo_abb_t *nodo_hijo, c
             void* valor_hijo = nodo_hijo->dato;
             nodo_hijo->clave = copia_clave;
             nodo_hijo->dato = nodo_remplazante_dato;
-
             return valor_hijo;
         }
 
     }
+    
     else if (cmp(nodo_hijo->clave, clave) < 0) return _abb_borrar(arbol, nodo_hijo ,nodo_hijo->der, clave, cmp);
     return _abb_borrar(arbol, nodo_hijo, nodo_hijo->izq, clave, cmp);
 }
@@ -220,6 +220,20 @@ void _abb_destruir(nodo_abb_t *nodo_act, abb_destruir_dato_t destruir) {
 void abb_destruir(abb_t *arbol) {
     _abb_destruir(arbol->raiz, arbol->destruir);
     free(arbol);
+}
+
+// ITERADOR INTERNO
+
+void _abb_in_order(nodo_abb_t *nodo_act, bool visitar(const char *, void *, void *), void *extra) {
+    if (!nodo_act) return;
+
+    _abb_in_order(nodo_act->izq, visitar, extra);
+    if(visitar && !visitar(nodo_act->clave, nodo_act->dato, extra)) return;
+    _abb_in_order(nodo_act->der, visitar, extra);
+}
+
+void abb_in_order(abb_t *arbol, bool visitar(const char *, void *, void *), void *extra) {
+    _abb_in_order(arbol->raiz, visitar, extra);
 }
 
 
