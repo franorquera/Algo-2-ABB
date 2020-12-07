@@ -154,21 +154,17 @@ void* _abb_borrar(abb_t *arbol, nodo_abb_t *nodo_padre, nodo_abb_t *nodo_hijo, c
         }
 
         else if ((!nodo_hijo->izq && nodo_hijo->der) || (!nodo_hijo->der && nodo_hijo->izq)) {
-            if (nodo_hijo->izq) {
-                if (nodo_padre && nodo_padre->izq && cmp(nodo_padre->izq->clave, nodo_hijo->clave) == 0) nodo_padre->izq = nodo_hijo->izq;
+            nodo_abb_t* seleccionado;
+
+            if(nodo_hijo->izq) seleccionado = nodo_hijo->izq;
+            else seleccionado = nodo_hijo->der;
+
+            if (nodo_padre && nodo_padre->izq && cmp(nodo_padre->izq->clave, nodo_hijo->clave) == 0) nodo_padre->izq = seleccionado;
                 
-                else if (nodo_padre && nodo_padre->der && cmp(nodo_padre->der->clave, nodo_hijo->clave) == 0) nodo_padre->der = nodo_hijo->izq;
+            else if (nodo_padre && nodo_padre->der && cmp(nodo_padre->der->clave, nodo_hijo->clave) == 0) nodo_padre->der = seleccionado;
                 
-                else if (!nodo_padre) arbol->raiz = nodo_hijo->izq;
-            }
-            
-            else if (nodo_hijo->der) {
-                if (nodo_padre && nodo_padre->izq && cmp(nodo_padre->izq->clave, nodo_hijo->clave) == 0) nodo_padre->izq = nodo_hijo->der;
-                
-                else if (nodo_padre && nodo_padre->der && cmp(nodo_padre->der->clave, nodo_hijo->clave) == 0) nodo_padre->der = nodo_hijo->der;
-                
-                else if (!nodo_padre) arbol->raiz = nodo_hijo->der;
-            }
+            else if (!nodo_padre) arbol->raiz = seleccionado;
+
             
             void* valor_hijo = nodo_hijo->dato;
             free((char*) nodo_hijo->clave);
