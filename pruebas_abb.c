@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>  // For ssize_t in Linux.
-#include <stdbool.h>
 
 static void prueba_crear_abb_vacio()
 {
@@ -272,7 +271,7 @@ static void pruebas_abb_iterador_interno(){
 
     abb_t* abb = abb_crear(strcmp, NULL);
 
-    char* claves[] = {"A","B","C","D","E", "F"};
+    char* claves[] = {"A","B","C","D","E", "F","G","H","X"};
     char *valores[] = {"guau", "miau", "mu"};
 
     abb_guardar(abb, claves[4], valores[0]);
@@ -281,6 +280,7 @@ static void pruebas_abb_iterador_interno(){
     abb_guardar(abb, claves[5], valores[0]);
     abb_guardar(abb, claves[2], valores[0]);
     abb_guardar(abb, claves[1], valores[0]);
+
 
     abb_in_order(abb, mostrar,NULL);
     abb_destruir(abb);
@@ -290,134 +290,172 @@ static void pruebas_abb_iterador_interno_con_condicion_de_corte(){
 
     abb_t* abb = abb_crear(strcmp, NULL);
 
-    char* claves[] = {"A","B","C","D","E", "F"};
+    char* claves[] = {"A","B","C","D","E", "F","G","H","X"};
     char *valores[] = {"guau", "miau", "mu"};
 
+    abb_guardar(abb, claves[7], valores[0]);
+    abb_guardar(abb, claves[3], valores[0]);
+    abb_guardar(abb, claves[8], valores[0]);
+    abb_guardar(abb, claves[2], valores[0]);
     abb_guardar(abb, claves[4], valores[0]);
     abb_guardar(abb, claves[0], valores[0]);
-    abb_guardar(abb, claves[3], valores[0]);
-    abb_guardar(abb, claves[5], valores[0]);
-    abb_guardar(abb, claves[2], valores[0]);
-    abb_guardar(abb, claves[1], valores[0]);
-    int extra = 3;
+    int extra = 2;
     abb_in_order(abb, mostrar,&extra);
     abb_destruir(abb);
 }
 
-
-static void prueba_abb_volumen(int num){
-    hash_t* hash_numeros = hash_crear(NULL);
+static void prueba_abb_volumen(size_t largo, bool debug){
     abb_t* abb = abb_crear(strcmp, NULL);
-    for(int i =0; i<num;){
-        int valor = rand();
-        char valor_string[10];
-        sprintf(valor_string, "%d", valor);
-        int dato = rand();
-        char dato_string[10];
-        sprintf(dato_string, "%d", dato);
-        if(!hash_pertenece(hash_numeros, valor_string)){
-            hash_guardar(hash_numeros, valor_string, dato_string);
-            abb_guardar(abb, valor_string, dato_string);
-            i++;
-        }
-    }
-    print_test("Prueba abb la cantidad de elementos correctos", abb_cantidad(abb) == num);
-    bool es_correcto = true;
-    hash_iter_t* iterador_hash = hash_iter_crear(hash_numeros);
-    while(!hash_iter_al_final(iterador_hash)){
-        const char* clave = hash_iter_ver_actual(iterador_hash);
-        es_correcto = abb_pertenece(abb,clave);
-        if(!es_correcto) break;
-        char* valor_hash = hash_obtener(hash_numeros, clave);
-        char* valor_abb = abb_obtener(abb,clave);
-        if(strcmp(valor_hash, valor_abb)!=0){
-            es_correcto = false;
-            break;
-        }
-        hash_iter_avanzar(iterador_hash);
-    }
-    print_test("Prueba que el abb tiene todos las claves y valores correspondientes", es_correcto);
-    hash_iter_destruir(iterador_hash);
 
-    hash_iter_t* iterador_hash_dos = hash_iter_crear(hash_numeros);
-    for(int i = 0; i<20;i++){
-        const char* clave = hash_iter_ver_actual(iterador_hash_dos);
-        char* valor_abb = abb_borrar(abb, clave);
-        char* valor_hash = hash_borrar(hash_numeros, clave);
-        if(strcmp(valor_abb,valor_hash) !=0){
-            es_correcto = false;
-            break;
+    const size_t largo_clave = 100;
+    char **claves = malloc(largo * largo_clave);
+
+    unsigned* valores[largo];
+
+    /* Inserta 'largo' parejas en el abb */
+    bool ok = true;
+    for (unsigned i = 0; i < largo;) {
+        unsigned clave = (unsigned)rand();
+        char* clave_string= malloc(100*sizeof(char));
+        sprintf(clave_string, "%08d", clave);
+        if(abb_pertenece(abb, clave_string)){
+            free(clave_string);
+            continue;
         }
-        hash_iter_avanzar(iterador_hash_dos);
-
+        claves[i] = clave_string;
+        valores[i] = malloc(sizeof(int));
+        *valores[i] = i;
+        ok = abb_guardar(abb, claves[i], valores[i]);
+        if (!ok) break;
+        i++;
     }
-    hash_iter_destruir(iterador_hash_dos);
-    print_test("Al borrar los elementos los datos eran los correctos", es_correcto);
-    print_test("Prueba abb la cantidad de elementos correctos luego de borrar 20 elementos", abb_cantidad(abb) == num-20);
 
-    hash_iter_t* iterador_hash_tres = hash_iter_crear(hash_numeros);
-    while(!hash_iter_al_final(iterador_hash_tres)){
-        const char* clave = hash_iter_ver_actual(iterador_hash_tres);
-        es_correcto = abb_pertenece(abb,clave);
-        if(!es_correcto) break;
-        char* valor_hash = hash_obtener(hash_numeros, clave);
-        char* valor_abb = abb_obtener(abb,clave);
-        if(strcmp(valor_hash, valor_abb)!=0){
-            es_correcto = false;
-            break;
-        }
-        hash_iter_avanzar(iterador_hash_tres);
+    if (debug) print_test("Prueba abb almacenar muchos elementos", ok);
+    if (debug) print_test("Prueba abb la cantidad de elementos es correcta", abb_cantidad(abb) == largo);
+
+    /* Verifica que devuelva los valores correctos */
+    for (size_t i = 0; i < largo; i++) {
+        ok = abb_pertenece(abb, claves[i]);
+        if (!ok) break;
+        ok = abb_obtener(abb, claves[i]) == valores[i];
+        if (!ok) break;
     }
-    print_test("Prueba que el abb tiene todos las claves y valores correspondientes luego de borrar 20 elementos", es_correcto);
-    hash_iter_destruir(iterador_hash_tres);
 
+    if (debug) print_test("Prueba abb pertenece y obtener muchos elementos", ok);
+    if (debug) print_test("Prueba abb la cantidad de elementos es correcta", abb_cantidad(abb) == largo);
+
+    /* Verifica que borre y devuelva los valores correctos */
+    for (size_t i = 0; i < largo; i++) {
+        ok = abb_borrar(abb, claves[i]) == valores[i];
+        if (!ok) break;
+    }
+
+    if (debug) print_test("Prueba abb borrar muchos elementos", ok);
+    if (debug) print_test("Prueba abb la cantidad de elementos es 0", abb_cantidad(abb) == 0);
+
+    /* Destruye el abb y crea uno nuevo que sí libera */
     abb_destruir(abb);
-    hash_destruir(hash_numeros);
+    abb_t* abb_ = abb_crear(strcmp, free);
+
+    /* Inserta 'largo' parejas en el abb */
+    ok = true;
+    for (size_t i = 0; i < largo; i++) {
+        ok = abb_guardar(abb_, claves[i], valores[i]);
+        if (!ok) break;
+    }
+
+    for(int i=0; i<largo;i++){
+        free(claves[i]);
+    }
+
+    free(claves);
+
+    /* Destruye el abb - debería liberar los enteros */
+    abb_destruir(abb_);
 
 }
 
-static void prueba_abb_iterar_volumen(int num){
-    hash_t* hash_numeros = hash_crear(NULL);
+static void prueba_abb_iterar_volumen(size_t largo){
     abb_t* abb = abb_crear(strcmp, NULL);
-    for(int i =0; i<num;){
-        int valor = rand();
-        char valor_string[10];
-        sprintf(valor_string, "%d", valor);
-        int dato = rand();
-        char dato_string[10];
-        sprintf(dato_string, "%d", dato);
-        if(!hash_pertenece(hash_numeros, valor_string)){
-            hash_guardar(hash_numeros, valor_string, dato_string);
-            abb_guardar(abb, valor_string, dato_string);
-            i++;
+
+    const size_t largo_clave = 100;
+    char **claves = malloc(largo * largo_clave);
+
+    size_t valores[largo];
+
+    /* Inserta 'largo' parejas en el abb */
+    bool ok = true;
+    for (unsigned i = 0; i < largo;) {
+        unsigned clave = (unsigned)rand();
+        char* clave_string= malloc(100*sizeof(char));
+        sprintf(clave_string, "%08d", clave);
+        if(abb_pertenece(abb, clave_string)){
+            free(clave_string);
+            continue;
         }
+        claves[i] = clave_string;
+        valores[i] = i;
+        ok = abb_guardar(abb, claves[i], &valores[i]);
+        if (!ok) break;
+        i++;
     }
-    abb_iter_t* iterador_abb = abb_iter_in_crear(abb);
-    bool es_correcto = true;
-    while(!abb_iter_in_al_final(iterador_abb)){
-        const char* clave_abb = abb_iter_in_ver_actual(iterador_abb);
-        if(!hash_pertenece(hash_numeros, clave_abb)){
-            es_correcto = false;
+
+    // Prueba de iteración sobre las claves almacenadas.
+    abb_iter_t* iter = abb_iter_in_crear(abb);
+    print_test("Prueba abb iterador esta al final, es false", !abb_iter_in_al_final(iter));
+
+    ok = true;
+    unsigned i;
+    const char *clave;
+    size_t *valor;
+
+    for (i = 0; i < largo; i++) {
+        if ( abb_iter_in_al_final(iter) ) {
+            ok = false;
             break;
         }
-        hash_borrar(hash_numeros, clave_abb);
-        abb_iter_in_avanzar(iterador_abb);
+        clave = abb_iter_in_ver_actual(iter);
+        if ( clave == NULL ) {
+            ok = false;
+            break;
+        }
+        valor = abb_obtener(abb, clave);
+        if ( valor == NULL ) {
+            ok = false;
+            break;
+        }
+        *valor = largo;
+        abb_iter_in_avanzar(iter);
     }
-    if(hash_cantidad(hash_numeros) != 0) es_correcto = false;
-    print_test("Prueba que el iterador del abb recorrio todos los elementos del abb", es_correcto);
-    print_test("Prueba abb la cantidad de elementos correctos", abb_cantidad(abb) == num);
+    print_test("Prueba abb iteración en volumen", ok);
+    print_test("Prueba abb iteración en volumen, recorrio todo el largo", i == largo);
+    print_test("Prueba abb iterador esta al final, es true", abb_iter_in_al_final(iter));
 
-    abb_iter_in_destruir(iterador_abb);
+    ok = true;
+    for (i = 0; i < largo; i++) {
+        if ( valores[i] != largo ) {
+            ok = false;
+            break;
+        }
+    }
+    print_test("Prueba abb iteración en volumen, se cambiaron todo los elementos", ok);
+
+    for(int j=0; j<largo;j++){
+        free(claves[j]);
+    }
+
+    free(claves);
+    abb_iter_in_destruir(iter);
     abb_destruir(abb);
-    hash_destruir(hash_numeros);
 }
+
 
 /* ******************************************************************
  *                        FUNCIÓN PRINCIPAL
  * *****************************************************************/
 
 
-void pruebas_abb_alumno()
+void pruebas_abb_estudiante()
 {
     /* Ejecuta todas las pruebas unitarias. */
     printf("\nprueba prueba_crear_abb_vacio\n\n");
@@ -437,7 +475,7 @@ void pruebas_abb_alumno()
     printf("\nprueba prueba_abb_valor_null\n\n");
     prueba_abb_valor_null();
     printf("\nprueba prueba_abb_volumen\n\n");
-    prueba_abb_volumen(5000);
+    prueba_abb_volumen(5000,true);
     printf("\nprueba prueba_abb_iterar\n\n");
     prueba_abb_iterar();
     printf("\nprueba pruebas_abb_iterador_interno\n\n");
@@ -447,3 +485,12 @@ void pruebas_abb_alumno()
     printf("\nprueba prueba_abb_iterar_volumen\n\n");
     prueba_abb_iterar_volumen(5000);
 }
+
+#ifndef CORRECTOR
+
+int main(void) {
+    pruebas_abb_estudiante();
+    return failure_count() > 0;
+}
+
+#endif

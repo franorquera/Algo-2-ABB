@@ -88,4 +88,6 @@ bool abb_iter_in_al_final(const abb_iter_t *iter);
 // Destryue el iterador
 void abb_iter_in_destruir(abb_iter_t* iter);
 
+//pruebas
+void pruebas_abb_estudiante(void);
 #endif  // ABB_H
